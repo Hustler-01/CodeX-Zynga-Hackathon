@@ -11,3 +11,4 @@ scipy
 pdf2image
 Werkzeug
 gunicorn
+tensorflow==2.16.2

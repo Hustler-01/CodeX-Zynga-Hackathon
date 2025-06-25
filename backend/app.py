@@ -21,7 +21,7 @@ app.config['MAX_CONTENT_LENGTH'] = 4 * 1024 * 1024  # 4MB
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
-# Load face verification components
+# Initialize face verification
 face_detector = FaceDetector(
     prototxt_path="models/deploy.prototxt.txt",
     model_path="models/res10_300x300_ssd_iter_140000.caffemodel"
@@ -30,66 +30,53 @@ face_embedder = FaceEmbedder()
 face_comparator = FaceComparator(threshold=0.65)
 face_verifier = FaceVerificationSystem(face_detector, face_embedder, face_comparator)
 
-@app.route('/upload_aadhaar', methods=['POST'])
-def upload_aadhaar():
-    if 'aadhaar_image' not in request.files:
-        return jsonify({"error": "No file uploaded"}), 400
-
-    file = request.files['aadhaar_image']
-    if not allowed_file(file.filename):
-        return jsonify({"error": "Invalid file format"}), 400
-
-    filename = secure_filename(file.filename)
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(file_path)
-    
-    # Convert PDF to image if needed
-    if file_path.lower().endswith(".pdf"):
-        file_path = convert_pdf_to_image(file_path)
-    
-    result = ocr_extract_info(file_path)
-
-    return jsonify({
-        "dob": result['dob'],
-        "age_years": result['age'],
-        "is_18_plus": result['is_18_or_more']
-    })
-
 @app.route('/verify', methods=['POST'])
 def verify_faces():
-    if 'aadhar' not in request.files or 'selfie' not in request.files:
-        return jsonify({"error": "Both Aadhaar and Selfie images are required"}), 400
+    try:
+        if 'aadhar' not in request.files or 'selfie' not in request.files:
+            return jsonify({"error": "Both Aadhaar and Selfie images are required"}), 400
 
-    aadhar = request.files['aadhar']
-    selfie = request.files['selfie']
+        aadhar = request.files['aadhar']
+        selfie = request.files['selfie']
 
-    if not allowed_file(aadhar.filename) or not allowed_file(selfie.filename):
-        return jsonify({"error": "Invalid file format"}), 400
+        if not allowed_file(aadhar.filename) or not allowed_file(selfie.filename):
+            return jsonify({"error": "Invalid file format"}), 400
 
-    aadhaar_path = os.path.join(UPLOAD_FOLDER, 'aadhaar.jpg')
-    selfie_path = os.path.join(UPLOAD_FOLDER, 'selfie.jpg')
-    aadhar.save(aadhaar_path)
-    selfie.save(selfie_path)
+        aadhaar_path = os.path.join(UPLOAD_FOLDER, secure_filename(aadhar.filename))
+        selfie_path = os.path.join(UPLOAD_FOLDER, secure_filename(selfie.filename))
 
-    ocr_result = ocr_extract_info(aadhaar_path)
+        aadhar.save(aadhaar_path)
+        selfie.save(selfie_path)
 
-    id_image = cv2.imread(aadhaar_path)
-    selfie_image = cv2.imread(selfie_path)
+        # Convert PDF if Aadhaar is a PDF
+        if aadhaar_path.lower().endswith(".pdf"):
+            aadhaar_path = convert_pdf_to_image(aadhaar_path)
 
-    verification = face_verifier.verify_faces(id_image, selfie_image)
+        # OCR extraction
+        ocr_result = ocr_extract_info(aadhaar_path)
 
-    if verification['status'] != 'success':
-        return jsonify({"error": verification['error']}), 500
+        # Load images
+        id_image = cv2.imread(aadhaar_path)
+        selfie_image = cv2.imread(selfie_path)
 
-    return jsonify({
-        "dob": ocr_result['dob'],
-        "age": ocr_result['age'],
-        "is18Plus": ocr_result['is_18_or_more'],
-        "isMatch": verification['verification']['match'],
-        "matchScore": verification['verification']['confidence'],
-        "quality": verification['verification']['quality']
-    })
+        # Face verification
+        verification = face_verifier.verify_faces(id_image, selfie_image)
+
+        if verification['status'] != 'success':
+            return jsonify({"error": verification.get('error', 'Verification failed')}), 500
+
+        return jsonify({
+            "dob": ocr_result.get('dob', 'N/A'),
+            "age": ocr_result.get('age', 'N/A'),
+            "is18Plus": ocr_result.get('is_18_or_more', 'N/A'),
+            "isMatch": verification['verification'].get('match', False),
+            "matchScore": verification['verification'].get('confidence', 0),
+            "quality": verification['verification'].get('quality', {})
+        })
+
+    except Exception as e:
+        print("Error:", str(e))
+        return jsonify({"error": "Server processing error", "details": str(e)}), 500
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=True)

@@ -13,7 +13,8 @@ class FaceComparator:
     def generate_verification_report(self, similarity: float, quality_score1: float, quality_score2: float) -> Dict:
         confidence = self._calculate_confidence(similarity, quality_score1, quality_score2)
         return {
-         'match': similarity > self.threshold,
+         'match': bool(similarity > self.threshold),
+
          'confidence': round(float(similarity),2),  # 🔁 renamed from 'similarity'
          'quality': {
            'id_quality': round(quality_score1,2),

@@ -5,7 +5,7 @@ from typing import Optional, Tuple
 class FaceDetector:
     def __init__(self, prototxt_path: str, model_path: str):
         self.net = cv2.dnn.readNetFromCaffe(prototxt_path, model_path)
-        self.min_confidence = 0.7
+        self.min_confidence = 0.5
     
     def detect_largest_face(self, image: np.ndarray) -> Optional[Tuple[int, int, int, int]]:
         (h, w) = image.shape[:2]

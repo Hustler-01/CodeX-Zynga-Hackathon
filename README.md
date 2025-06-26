@@ -164,9 +164,9 @@ All assets provided inside `samples/` folder.
 
 ---
 
-##  Demo Video
+##  Try it 
 
-📺 [Watch Demo on YouTube](#) *(Insert link here)*
+(https://cosmic-beijinho-09ea72.netlify.app/)
 
 ---
 

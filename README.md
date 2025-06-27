@@ -166,7 +166,7 @@ All assets provided inside `samples/` folder.
 
 ##  Try it 
 
-(https://cosmic-beijinho-09ea72.netlify.app/)
+(https://hackonzeta.netlify.app/)
 
 ---
 

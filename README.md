@@ -163,11 +163,6 @@ Use fake Aadhaar images like:
 All assets provided inside `samples/` folder.
 
 ---
-
-##  Try it 
-
-(https://hackonzeta.netlify.app/)
-
 ---
 
 ##  Final Notes

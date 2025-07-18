@@ -162,9 +162,6 @@ Use fake Aadhaar images like:
 
 All assets provided inside `samples/` folder.
 
----
----
-
 ##  Final Notes
 
 This system is for **educational/demo purposes only**. No real Aadhaar data or government APIs are used.
